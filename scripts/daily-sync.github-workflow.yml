@@ -1,0 +1,38 @@
+name: Bellhaven Daily CRM Reconciliation
+
+on:
+  schedule:
+    # Run daily at 06:00 UTC before sales operations team starts
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  daily-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache SQLite decision history
+        uses: actions/cache@v4
+        with:
+          path: data/state.db
+          key: bellhaven-state-${{ github.run_id }}
+          restore-keys: |
+            bellhaven-state-
+
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Run daily scraper and reconciliation queue update
+        env:
+          BELLHAVEN_API_TOKEN: ${{ secrets.BELLHAVEN_API_TOKEN }}
+          BELLHAVEN_SITE_BASE: ${{ vars.BELLHAVEN_SITE_BASE || 'https://analyst-assessment-production.up.railway.app' }}
+        run: |
+          python run.py --sync
+          python run.py --status

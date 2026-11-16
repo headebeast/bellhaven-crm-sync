@@ -1,0 +1,2 @@
+# Daily reconciliation at 06:00 local time (idempotent via data/state.db)
+0 6 * * * cd /opt/bellhaven-sync && /usr/bin/python3 run.py --sync >> /var/log/bellhaven-sync.log 2>&1
